@@ -1,25 +1,29 @@
+import aiogram
 import asyncio
 import click
 import nio
 
 from .matrix_client import MatrixClient
+from .telegram_client import TelegramClient
 
 
 async def send(arguments):
-    async with MatrixClient(homeserver=arguments['matrix_homeserver'], user=arguments['matrix_user_id'], device_id=arguments['matrix_device_id']) as client:
-        client: nio.AsyncClient
-        client.user_id = arguments['matrix_user_id']
-        client.access_token = arguments['matrix_access_token']
-        print('Sending...')
-        await client.room_send(
-            room_id=arguments['matrix_room_id'],
-            message_type='m.room.message',
-            content={
-                'msgtype': 'm.text',
-                'body': 'Hello World',
-            },
-        )
-        print('Sent')
+    async with TelegramClient(token=arguments['telegram_bot_token']) as client:
+        client: aiogram.Bot
+        print(await client.get_me())
+        await client.send_message(chat_id=arguments['telegram_chat_id'], text='Hello World!')
+    # async with MatrixClient(homeserver=arguments['matrix_homeserver'], user=arguments['matrix_user_id'], device_id=arguments['matrix_device_id']) as client:
+    #     client: nio.AsyncClient
+    #     client.user_id = arguments['matrix_user_id']
+    #     client.access_token = arguments['matrix_access_token']
+    #     await client.room_send(
+    #         room_id=arguments['matrix_room_id'],
+    #         message_type='m.room.message',
+    #         content={
+    #             'msgtype': 'm.text',
+    #             'body': 'Hello World',
+    #         },
+    #     )
 
 
 @click.command()

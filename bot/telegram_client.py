@@ -30,8 +30,11 @@ class TelegramClient:
     async def send_failed_api_call(self, method: str, url: str, got: int, expected: int):
         await self.send(f'\U000026a0 Failed API call {method} {self.escape(url)} \\(got `{got}`, expected `{expected}`\\)', disable_notification=True)
 
-    async def send_create_webhook(self, fork_owner: str, fork_repo: str):
+    async def send_create_webhook_of_repository(self, fork_owner: str, fork_repo: str):
         await self.send(f'\U00002705 Creating webhook at `{self.escape(fork_owner)}/{self.escape(fork_repo)}`\\.\\.\\.', disable_notification=True)
+
+    async def send_create_webhook_of_organization(self, organization: str):
+        await self.send(f'\U00002705 Creating webhook at `{self.escape(organization)}`\\.\\.\\.', disable_notification=True)
 
     async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str):
         escaped_pusher = f'`@{self.escape(pusher)}`'

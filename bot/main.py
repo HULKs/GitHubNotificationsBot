@@ -230,12 +230,12 @@ class Bot:
     async def update_hooks_of_repository(self, owner: str, repo: str):
         for fork_owner, fork_repo in await self.get_forks_of_repository(owner, repo):
             if not await self.check_hooks_of_repository(fork_owner, fork_repo):
-                await self.telegram.send(f'Creating webhook at `{self.telegram.escape(fork_owner)}/{self.telegram.escape(fork_repo)}`\\.\\.\\.')
+                await self.telegram.send_create_webhook_of_repository(fork_owner, fork_repo)
                 await self.create_hook_of_repository(fork_owner, fork_repo)
 
     async def update_hooks(self):
         if not await self.check_hooks_of_organization(self.arguments['github_organization']):
-            await self.telegram.send(f'Creating webhook at `{self.telegram.escape(self.arguments["github_organization"])}`\\.\\.\\.')
+            await self.telegram.send_create_webhook_of_organization(self.arguments['github_organization'])
             await self.create_hook_of_organization(self.arguments['github_organization'])
         for repo in self.arguments['github_forkable_repositories'].split(','):
             await self.update_hooks_of_repository(self.arguments['github_organization'], repo)

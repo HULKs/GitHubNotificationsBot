@@ -27,7 +27,6 @@ class MatrixClient:
                 'formatted_body': formatted_message,
             },
         )
-        # await self.bot.send_message(chat_id=self.chat_id, text=message, parse_mode='MarkdownV2', **kwargs)
 
     async def send_startup(self):
         await self.send(

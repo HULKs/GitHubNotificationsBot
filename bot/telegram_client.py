@@ -9,7 +9,7 @@ class TelegramClient:
         self.chat_id = chat_id
         self.bot = aiogram.Bot(*args, **kwargs)
 
-    async def __aenter__(self) -> aiogram.Bot:
+    async def __aenter__(self) -> 'TelegramClient':
         return self
 
     async def __aexit__(self, *args, **kwargs):
@@ -19,13 +19,10 @@ class TelegramClient:
         await self.bot.send_message(chat_id=self.chat_id, text=message, parse_mode='MarkdownV2', **kwargs)
 
     async def send_startup(self):
-        await self.send(f'\U0001f92b Online again', disable_notification=True)
+        await self.send('\U0001f92b Online again', disable_notification=True)
 
     async def send_unauthorized_request(self, remote: str):
         await self.send(f'\U000026a0 Unauthorized request from `{self.escape(remote)}`', disable_notification=True)
-
-    async def send_unimplemented_event(self, event: str):
-        await self.send(f'\U000026a0 Event {self.escape(event)} is not implemented', disable_notification=True)
 
     async def send_failed_api_call(self, method: str, url: str, got: int, expected: int):
         await self.send(f'\U000026a0 Failed API call {method} {self.escape(url)} \\(got `{got}`, expected `{expected}`\\)', disable_notification=True)
@@ -52,7 +49,7 @@ class TelegramClient:
         escaped_issue_or_pull_request = f'`{self.escape(repository)}#{number}`'
         escaped_title = f'`{self.escape(title)}`'
         converted_url = f'[{self.escape(url)}]({url})'
-        await self.send(f'{escaped_sender} {escaped_action} {type} {escaped_issue_or_pull_request} \\({escaped_title}\\):\n{converted_url}')
+        await self.send(f'{escaped_sender} {escaped_action} {type} {escaped_issue_or_pull_request} \\({escaped_title}\\):\n\n{converted_url}')
         # TODO: merge
 
     async def send_issue_or_pull_request_comment(self, commenter: str, type: str, repository: str, number: int, title: str, body: str, url: str):
@@ -61,7 +58,7 @@ class TelegramClient:
         escaped_title = f'`{self.escape(title)}`'
         escaped_body = f'`{self.escape(body)}`'
         converted_url = f'[{self.escape(url)}]({url})'
-        await self.send(f'{escaped_commenter} commented on {type} {escaped_issue_or_pull_request} \\({escaped_title}\\):\n{escaped_body}\n{converted_url}')
+        await self.send(f'{escaped_commenter} commented on {type} {escaped_issue_or_pull_request} \\({escaped_title}\\):\n\n{escaped_body}\n\n{converted_url}')
 
     async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: str, url: str):
         escaped_sender = f'`@{self.escape(sender)}`'
@@ -69,7 +66,7 @@ class TelegramClient:
         escaped_title = f'`{self.escape(title)}`'
         escaped_body = f'`{self.escape(body)}`'
         converted_url = f'[{self.escape(url)}]({url})'
-        await self.send(f'{escaped_sender} {state} pull request {escaped_pull_request} \\({escaped_title}\\):\n{escaped_body}\n{converted_url}')
+        await self.send(f'{escaped_sender} {state} pull request {escaped_pull_request} \\({escaped_title}\\):\n\n{escaped_body}\n\n{converted_url}')
 
     def escape(self, message: str):
         return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', message)

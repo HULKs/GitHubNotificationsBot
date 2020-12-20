@@ -83,14 +83,14 @@ class MatrixClient:
         escaped_body = self.escape(body).replace('\n', '<br />')
         await self.send(
             f'`@{commenter}` commented on {type} `{repository}#{number}` (`{title}`):\n\n{body}\n\n{url}',
-            f'<code>@{self.escape(commenter)}</code> commented on {type} <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br />{escaped_body}<br /><br /><a href="{url}">{self.escape(url)}</a>',
+            f'<code>@{self.escape(commenter)}</code> commented on {type} <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br /><code>{escaped_body}</code><br /><br /><a href="{url}">{self.escape(url)}</a>',
         )
 
     async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: str, url: str):
         escaped_body = self.escape(body).replace('\n', '<br />')
         await self.send(
             f'`@{sender}` {state} pull request `{repository}#{number}` (`{title}`):\n\n{body}\n\n{url}',
-            f'<code>@{self.escape(sender)}</code> {state} pull request <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br />{escaped_body}<br /><br /><a href="{url}">{self.escape(url)}</a>',
+            f'<code>@{self.escape(sender)}</code> {state} pull request <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br /><code>{escaped_body}</code><br /><br /><a href="{url}">{self.escape(url)}</a>',
         )
 
     def escape(self, message: str):

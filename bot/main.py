@@ -36,7 +36,9 @@ class Bot:
         self.arguments = arguments
         self.api_session = aiohttp.ClientSession()
         self.telegram = TelegramClient(
-            chat_id=self.arguments['telegram_chat_id'], token=self.arguments['telegram_bot_token'])
+            chat_id=self.arguments['telegram_chat_id'],
+            token=self.arguments['telegram_bot_token'],
+        )
 
     def add_routes(self, app: aiohttp.web.Application):
         app.add_routes([
@@ -49,6 +51,7 @@ class Bot:
     async def __aenter__(self):
         await self.api_session.__aenter__()
         await self.telegram.__aenter__()
+        await self.telegram.send_startup()
         await self.update_hooks()
         return self
 
@@ -161,7 +164,7 @@ class Bot:
         headers.update(additional_headers)
         async with self.api_session.get(f'https://api.github.com{url}', headers=headers, params=additional_params) as response:
             if response.status != expected_response_status:
-                await self.telegram.send(f'`GET https://api.github.com{self.telegram.escape(url)} -> {response.status}`, expected `{expected_response_status}`')
+                await self.telegram.send_failed_api_call('GET', url, response.status, expected_response_status)
                 raise RuntimeError(f'Got {response.status} instead of {expected_response_status} while GET https://api.github.com{url} (body: {await response.json()}')
             return await response.json()
 
@@ -174,7 +177,7 @@ class Bot:
         headers.update(additional_headers)
         async with self.api_session.post(f'https://api.github.com{url}', headers=headers, params=additional_params, json=json) as response:
             if response.status != expected_response_status:
-                await self.telegram.send(f'`POST https://api.github.com{self.telegram.escape(url)} -> {response.status}`, expected `{expected_response_status}`')
+                await self.telegram.send_failed_api_call('POST', url, response.status, expected_response_status)
                 raise RuntimeError(f'Got {response.status} instead of {expected_response_status} while POST https://api.github.com{url} (body: {await response.json()}')
             return await response.json()
 

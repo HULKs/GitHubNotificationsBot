@@ -1,0 +1,9 @@
+version: "3"
+services:
+  bot:
+    image: bot
+    build: .
+    ports:
+    - "18080:80"
+    env_file:
+    - .env

@@ -272,4 +272,5 @@ async def async_main(arguments):
 @click.option('--matrix-access-token', required=True, envvar='MATRIX_ACCESS_TOKEN')
 @click.option('--matrix-room-id', required=True, envvar='MATRIX_ROOM_ID')
 def main(**arguments):
+    # TODO: handle signals to terminate gracefully
     asyncio.run(async_main(arguments))

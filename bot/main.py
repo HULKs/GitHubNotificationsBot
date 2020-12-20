@@ -1,11 +1,8 @@
-import aiogram
 import aiohttp.web
 import asyncio
 import click
 import hashlib
 import hmac
-import nio
-import typing
 
 from .matrix_client import MatrixClient
 from .telegram_client import TelegramClient

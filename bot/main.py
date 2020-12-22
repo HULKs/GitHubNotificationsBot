@@ -26,13 +26,15 @@ class Bot:
             access_token=self.arguments['github_access_token'],
         )
         self.telegram = TelegramClient(
-            chat_id=self.arguments['telegram_chat_id'],
+            chat_id_discussions=self.arguments['telegram_chat_id_discussions'],
+            chat_id_pushes=self.arguments['telegram_chat_id_pushes'],
             token=self.arguments['telegram_bot_token'],
         )
         self.matrix = MatrixClient(
             user_id=self.arguments['matrix_user_id'],
             access_token=self.arguments['matrix_access_token'],
-            room_id=self.arguments['matrix_room_id'],
+            room_id_discussions=self.arguments['matrix_room_id_discussions'],
+            room_id_pushes=self.arguments['matrix_room_id_pushes'],
             homeserver=self.arguments['matrix_homeserver'],
             user=self.arguments['matrix_user_id'],
             device_id=self.arguments['matrix_device_id'],
@@ -224,12 +226,14 @@ async def async_main(arguments):
 @click.option('--github-forkable-repositories', required=True, envvar='GITHUB_FORKABLE_REPOSITORIES')
 @click.option('--github-webhook-url', required=True, envvar='GITHUB_WEBHOOK_URL')
 @click.option('--telegram-bot-token', required=True, envvar='TELEGRAM_BOT_TOKEN')
-@click.option('--telegram-chat-id', required=True, envvar='TELEGRAM_CHAT_ID')
+@click.option('--telegram-chat-id-discussions', required=True, envvar='TELEGRAM_CHAT_ID_DISCUSSIONS')
+@click.option('--telegram-chat-id-pushes', required=True, envvar='TELEGRAM_CHAT_ID_PUSHES')
 @click.option('--matrix-homeserver', required=True, envvar='MATRIX_HOMESERVER')
 @click.option('--matrix-user-id', required=True, envvar='MATRIX_USER_ID')
 @click.option('--matrix-device-id', required=True, envvar='MATRIX_DEVICE_ID')
 @click.option('--matrix-access-token', required=True, envvar='MATRIX_ACCESS_TOKEN')
-@click.option('--matrix-room-id', required=True, envvar='MATRIX_ROOM_ID')
+@click.option('--matrix-room-id-discussions', required=True, envvar='MATRIX_ROOM_ID_DISCUSSIONS')
+@click.option('--matrix-room-id-pushes', required=True, envvar='MATRIX_ROOM_ID_PUSHES')
 @click.option('--logging-level', required=True, type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), envvar='LOGGING_LEVEL')
 def main(**arguments):
     logging.basicConfig(

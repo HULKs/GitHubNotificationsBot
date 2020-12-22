@@ -3,16 +3,28 @@ import asyncio
 import click
 import hashlib
 import hmac
+import logging
 
+from .github_api import GitHubApi, UnexpectedResponseStatus
 from .matrix_client import MatrixClient
 from .telegram_client import TelegramClient
 
 
 class Bot:
 
-    def __init__(self, arguments: dict):
+    def __init__(self, arguments: dict, app: aiohttp.web.Application):
+        self.logger = logging.getLogger('Bot')
         self.arguments = arguments
-        self.api_session = aiohttp.ClientSession()
+        self.app = app
+        self.app.add_routes([
+            aiohttp.web.post(
+                '/',
+                self.handle,
+            ),
+        ])
+        self.github = GitHubApi(
+            access_token=self.arguments['github_access_token'],
+        )
         self.telegram = TelegramClient(
             chat_id=self.arguments['telegram_chat_id'],
             token=self.arguments['telegram_bot_token'],
@@ -26,16 +38,8 @@ class Bot:
             device_id=self.arguments['matrix_device_id'],
         )
 
-    def add_routes(self, app: aiohttp.web.Application):
-        app.add_routes([
-            aiohttp.web.post(
-                '/',
-                self.handle,
-            ),
-        ])
-
     async def __aenter__(self):
-        await self.api_session.__aenter__()
+        await self.github.__aenter__()
         await self.telegram.__aenter__()
         await self.matrix.__aenter__()
         await self.telegram.send_startup()
@@ -44,9 +48,9 @@ class Bot:
         return self
 
     async def __aexit__(self, *args, **kwargs):
-        await self.matrix.__aexit__(*args, **kwargs)
         await self.telegram.__aexit__(*args, **kwargs)
-        await self.api_session.__aexit__(*args, **kwargs)
+        await self.matrix.__aexit__(*args, **kwargs)
+        await self.github.__aexit__(*args, **kwargs)
 
     async def authenticate(self, request: aiohttp.web.Request):
         own_signature = 'sha256=' + hmac.new(
@@ -142,102 +146,58 @@ class Bot:
         # TODO: fork
         return aiohttp.web.Response()
 
-    async def get_from_api(self, url: str, additional_headers: dict = {}, additional_params: dict = {}, expected_response_status=200):
-        headers = {
-            'Accept': 'application/vnd.github.v3+json',
-            'Authorization': f'token {self.arguments["github_access_token"]}',
-            'User-Agent': 'bot',
-        }
-        headers.update(additional_headers)
-        async with self.api_session.get(f'https://api.github.com{url}', headers=headers, params=additional_params) as response:
-            if response.status != expected_response_status:
-                await self.telegram.send_failed_api_call('GET', url, response.status, expected_response_status)
-                await self.matrix.send_failed_api_call('GET', url, response.status, expected_response_status)
-                raise RuntimeError(f'Got {response.status} instead of {expected_response_status} while GET https://api.github.com{url} (body: {await response.json()}')
-            return await response.json()
-
-    async def post_from_api(self, url: str, additional_headers: dict = {}, additional_params: dict = {}, json: dict = None, expected_response_status=200):
-        headers = {
-            'Accept': 'application/vnd.github.v3+json',
-            'Authorization': f'token {self.arguments["github_access_token"]}',
-            'User-Agent': 'bot',
-        }
-        headers.update(additional_headers)
-        async with self.api_session.post(f'https://api.github.com{url}', headers=headers, params=additional_params, json=json) as response:
-            if response.status != expected_response_status:
-                await self.telegram.send_failed_api_call('POST', url, response.status, expected_response_status)
-                await self.matrix.send_failed_api_call('POST', url, response.status, expected_response_status)
-                raise RuntimeError(f'Got {response.status} instead of {expected_response_status} while POST https://api.github.com{url} (body: {await response.json()}')
-            return await response.json()
-
-    async def get_repositories_of_organization(self, org: str):
-        return [
-            repository['name']
-            for repository in await self.get_from_api(f'/orgs/{org}/repos')
-        ]
-
-    async def get_forks_of_repository(self, owner: str, repo: str):
-        return [
-            (fork['owner']['login'], fork['name'])
-            for fork in await self.get_from_api(f'/repos/{owner}/{repo}/forks')
-        ]
-
-    async def check_hooks_of_repository(self, owner: str, repo: str):
-        for hook in await self.get_from_api(f'/repos/{owner}/{repo}/hooks'):
-            if hook['config']['url'] == self.arguments['github_webhook_url']:
-                return True
-        return False
-
-    async def check_hooks_of_organization(self, org: str):
-        for hook in await self.get_from_api(f'/orgs/{org}/hooks'):
-            if hook['config']['url'] == self.arguments['github_webhook_url']:
-                return True
-        return False
-
-    async def create_hook_of_repository(self, owner: str, repo: str):
-        await self.post_from_api(f'/repos/{owner}/{repo}/hooks', json={
-            'name': 'web',
-            'config': {
-                'url': self.arguments['github_webhook_url'],
-                'content_type': 'json',
-                'secret': self.arguments['github_webhook_secret'],
-            },
-            'events': ['*'],
-        }, expected_response_status=201)
-
-    async def create_hook_of_organization(self, org: str):
-        await self.post_from_api(f'/orgs/{org}/hooks', json={
-            'name': 'web',
-            'config': {
-                'url': self.arguments['github_webhook_url'],
-                'content_type': 'json',
-                'secret': self.arguments['github_webhook_secret'],
-            },
-            'events': ['*'],
-        }, expected_response_status=201)
-
-    async def update_hooks_of_repository(self, owner: str, repo: str):
-        for fork_owner, fork_repo in await self.get_forks_of_repository(owner, repo):
-            if not await self.check_hooks_of_repository(fork_owner, fork_repo):
-                await self.telegram.send_create_webhook_of_repository(fork_owner, fork_repo)
-                await self.matrix.send_create_webhook_of_repository(fork_owner, fork_repo)
-                await self.create_hook_of_repository(fork_owner, fork_repo)
-
     async def update_hooks(self):
-        if not await self.check_hooks_of_organization(self.arguments['github_organization']):
+        required_events = [
+            'push',
+            'issues',
+            'pull_request',
+            'issue_comment',
+            'pull_request_review_comment',
+            'pull_request_review',
+            'fork',
+        ]
+        create_needed = True
+        for hook_id, hook_url, hook_events in await self.github.hooks(self.arguments['github_organization']):
+            if hook_url == self.arguments['github_webhook_url']:
+                create_needed = False
+                if set(hook_events) != set(required_events):
+                    await self.github.delete_hook(hook_id, self.arguments['github_organization'])
+                    create_needed = True
+        if create_needed:
             await self.telegram.send_create_webhook_of_organization(self.arguments['github_organization'])
             await self.matrix.send_create_webhook_of_organization(self.arguments['github_organization'])
-            await self.create_hook_of_organization(self.arguments['github_organization'])
+            await self.github.create_hook(
+                self.arguments['github_webhook_url'],
+                required_events,
+                self.arguments['github_webhook_secret'],
+                self.arguments['github_organization'],
+            )
         for repo in self.arguments['github_forkable_repositories'].split(','):
-            await self.update_hooks_of_repository(self.arguments['github_organization'], repo)
+            for fork_owner, fork_repo in await self.github.forks(self.arguments['github_organization'], repo):
+                create_needed = True
+                for hook_id, hook_url, hook_events in await self.github.hooks(fork_owner, fork_repo):
+                    if hook_url == self.arguments['github_webhook_url']:
+                        create_needed = False
+                        if set(hook_events) != set(required_events):
+                            await self.github.delete_hook(hook_id, fork_owner, fork_repo)
+                            create_needed = True
+                if create_needed:
+                    await self.telegram.send_create_webhook_of_repository(fork_owner, fork_repo)
+                    await self.matrix.send_create_webhook_of_repository(fork_owner, fork_repo)
+                    await self.github.create_hook(
+                        self.arguments['github_webhook_url'],
+                        required_events,
+                        self.arguments['github_webhook_secret'],
+                        fork_owner,
+                        fork_repo,
+                    )
 
 
 async def async_main(arguments):
+    logger = logging.getLogger('main')
     app = aiohttp.web.Application()
 
-    async with Bot(arguments) as bot:
-        bot.add_routes(app)
-
+    async with Bot(arguments, app):
         runner = aiohttp.web.AppRunner(app)
         await runner.setup()
         site = aiohttp.web.TCPSite(
@@ -249,8 +209,7 @@ async def async_main(arguments):
 
         eternity_event = asyncio.Event()
         try:
-            print('Listening on', ', '.join(str(site.name)
-                                            for site in runner.sites), '...')
+            logger.info(f'Listening on {", ".join(str(site.name) for site in runner.sites)}...')
             await eternity_event.wait()
         finally:
             await runner.cleanup()
@@ -271,6 +230,11 @@ async def async_main(arguments):
 @click.option('--matrix-device-id', required=True, envvar='MATRIX_DEVICE_ID')
 @click.option('--matrix-access-token', required=True, envvar='MATRIX_ACCESS_TOKEN')
 @click.option('--matrix-room-id', required=True, envvar='MATRIX_ROOM_ID')
+@click.option('--logging-level', required=True, type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), envvar='LOGGING_LEVEL')
 def main(**arguments):
+    logging.basicConfig(
+        level=arguments['logging_level'],
+        format='%(asctime)s  %(name)-20s  %(levelname)-8s  %(message)s',
+    )
     # TODO: handle signals to terminate gracefully
     asyncio.run(async_main(arguments))

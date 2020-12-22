@@ -38,8 +38,10 @@ class TelegramClient:
     async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str):
         escaped_pusher = f'`@{self.escape(pusher)}`'
         escaped_commit_messages = '\n'.join(
-            [f'\\- `{self.escape(message)}`' for message in commit_messages],
+            [f'\\- `{self.escape(message)}`' for message in commit_messages[:10]],
         )
+        if len(commit_messages) > 10:
+            escaped_commit_messages += f'\n\\.\\.\\. {len(commit_messages) - 10} more'
         commit_label = 'commits' if len(commit_messages) > 1 else 'commit'
         escaped_branch = f'`{self.escape(branch)}`'
         escaped_repository = f'`{self.escape(repository)}`'

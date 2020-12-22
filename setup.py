@@ -14,6 +14,7 @@ setuptools.setup(
         'aiogram>=2.11.2',
         'aiohttp>=3.7.3',
         'click>=7.1.2',
+        'links-from-link-header>=0.1.0',
         'matrix-nio[e2e]>=0.15.2',
     ],
 )

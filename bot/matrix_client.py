@@ -87,23 +87,31 @@ class MatrixClient:
 
     async def send_issue_or_pull_request(self, sender: str, type: str, action: str, repository: str, number: int, title: str, url: str):
         await self.send_to_discussions(
-            f'`@{sender}` {action} {type} `{repository}#{number}` (`{title}`):\n\n{url}',
-            f'<code>@{self.escape(sender)}</code> {self.escape(action)} {type} <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br /><a href="{url}">{self.escape(url)}</a>',
+            f'`@{sender}` {action} {type} `{title}` (`{repository}#{number}`):\n\n{url}',
+            f'<code>@{self.escape(sender)}</code> {self.escape(action)} {type} <code>{self.escape(title)}</code> (<code>{self.escape(repository)}#{number}</code>)<br /><br /><a href="{url}">{self.escape(url)}</a>',
         )
         # TODO: merge
 
     async def send_issue_or_pull_request_comment(self, commenter: str, type: str, repository: str, number: int, title: str, body: str, url: str):
-        escaped_body = self.escape(body).replace('\n', '<br />')
+        escaped_body_markdown = f':\n\n`{body.strip()}`' if len(
+            body.strip()) > 0 else ''
+        escaped_body_html = self.escape(body.strip()).replace("\n", "<br />")
+        escaped_body_html = f':<br /><br /><code>{escaped_body_html}</code>' if len(
+            body.strip()) > 0 else ''
         await self.send_to_discussions(
-            f'`@{commenter}` commented on {type} `{repository}#{number}` (`{title}`):\n\n{body}\n\n{url}',
-            f'<code>@{self.escape(commenter)}</code> commented on {type} <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br /><code>{escaped_body}</code><br /><br /><a href="{url}">{self.escape(url)}</a>',
+            f'`@{commenter}` commented on {type} `{title}` (`{repository}#{number}`){escaped_body_markdown}\n\n{url}',
+            f'<code>@{self.escape(commenter)}</code> commented on {type} <code>{self.escape(title)}</code> (<code>{self.escape(repository)}#{number}</code>){escaped_body_html}<br /><br /><a href="{url}">{self.escape(url)}</a>',
         )
 
     async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: str, url: str):
-        escaped_body = self.escape(body).replace('\n', '<br />')
+        escaped_body_markdown = f':\n\n`{body.strip()}`' if len(
+            body.strip()) > 0 else ''
+        escaped_body_html = self.escape(body.strip()).replace("\n", "<br />")
+        escaped_body_html = f':<br /><br /><code>{escaped_body_html}</code>' if len(
+            body.strip()) > 0 else ''
         await self.send_to_discussions(
-            f'`@{sender}` {state} pull request `{repository}#{number}` (`{title}`):\n\n{body}\n\n{url}',
-            f'<code>@{self.escape(sender)}</code> {state} pull request <code>{self.escape(repository)}#{number}</code> (<code>{self.escape(title)}</code>):<br /><br /><code>{escaped_body}</code><br /><br /><a href="{url}">{self.escape(url)}</a>',
+            f'`@{sender}` {state} pull request `{title}` (`{repository}#{number}`){escaped_body_markdown}\n\n{url}',
+            f'<code>@{self.escape(sender)}</code> {state} pull request <code>{self.escape(title)}</code> (<code>{self.escape(repository)}#{number}</code>){escaped_body_html}<br /><br /><a href="{url}">{self.escape(url)}</a>',
         )
 
     def escape(self, message: str):

@@ -53,24 +53,24 @@ class TelegramClient:
         escaped_issue_or_pull_request = f'`{self.escape(repository)}#{number}`'
         escaped_title = f'`{self.escape(title)}`'
         converted_url = f'[{self.escape(url)}]({url})'
-        await self.send_to_discussions(f'{escaped_sender} {escaped_action} {type} {escaped_issue_or_pull_request} \\({escaped_title}\\):\n\n{converted_url}')
+        await self.send_to_discussions(f'{escaped_sender} {escaped_action} {type} {escaped_title} \\({escaped_issue_or_pull_request}\\)\n\n{converted_url}')
         # TODO: merge
 
     async def send_issue_or_pull_request_comment(self, commenter: str, type: str, repository: str, number: int, title: str, body: str, url: str):
         escaped_commenter = f'`@{self.escape(commenter)}`'
         escaped_issue_or_pull_request = f'`{self.escape(repository)}#{number}`'
         escaped_title = f'`{self.escape(title)}`'
-        escaped_body = f'`{self.escape(body)}`'
+        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(body.strip()) > 0 else ''
         converted_url = f'[{self.escape(url)}]({url})'
-        await self.send_to_discussions(f'{escaped_commenter} commented on {type} {escaped_issue_or_pull_request} \\({escaped_title}\\):\n\n{escaped_body}\n\n{converted_url}')
+        await self.send_to_discussions(f'{escaped_commenter} commented on {type} {escaped_title} \\({escaped_issue_or_pull_request}\\){escaped_body}\n\n{converted_url}')
 
     async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: str, url: str):
         escaped_sender = f'`@{self.escape(sender)}`'
         escaped_pull_request = f'`{self.escape(repository)}#{number}`'
         escaped_title = f'`{self.escape(title)}`'
-        escaped_body = f'`{self.escape(body)}`'
+        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(body.strip()) > 0 else ''
         converted_url = f'[{self.escape(url)}]({url})'
-        await self.send_to_discussions(f'{escaped_sender} {state} pull request {escaped_pull_request} \\({escaped_title}\\):\n\n{escaped_body}\n\n{converted_url}')
+        await self.send_to_discussions(f'{escaped_sender} {state} pull request {escaped_title} \\({escaped_pull_request}\\){escaped_body}\n\n{converted_url}')
 
     def escape(self, message: str):
         return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', message)

@@ -89,6 +89,9 @@ class Bot:
         return aiohttp.web.Response()
 
     async def handle_push(self, payload: dict):
+        if payload['deleted'] == True:
+            # ignore deleted branch notifications
+            return aiohttp.web.Response()
         pusher = payload['pusher']['name']
         commit_messages = [commit['message'].split(
             '\n')[0] for commit in payload['commits']]

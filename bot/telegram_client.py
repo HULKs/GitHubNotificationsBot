@@ -35,7 +35,7 @@ class TelegramClient:
     async def send_create_webhook_of_organization(self, organization: str):
         await self.send_to_pushes(f'\U00002705 Creating webhook at `{self.escape(organization)}`\\.\\.\\.', disable_notification=True)
 
-    async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str):
+    async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str, is_forced: bool):
         escaped_pusher = f'`@{self.escape(pusher)}`'
         escaped_commit_messages = '\n'.join(
             [f'\\- `{self.escape(message)}`' for message in commit_messages[:10]],
@@ -45,7 +45,8 @@ class TelegramClient:
         commit_label = 'commits' if len(commit_messages) > 1 else 'commit'
         escaped_branch = f'`{self.escape(branch)}`'
         escaped_repository = f'`{self.escape(repository)}`'
-        await self.send_to_pushes(f'{escaped_pusher} pushed {len(commit_messages)} {commit_label} to {escaped_branch} at {escaped_repository}:\n\n{escaped_commit_messages}')
+        force_label = 'force ' if is_forced else ''
+        await self.send_to_pushes(f'{escaped_pusher} {force_label}pushed {len(commit_messages)} {commit_label} to {escaped_branch} at {escaped_repository}:\n\n{escaped_commit_messages}')
 
     async def send_issue_or_pull_request(self, sender: str, type: str, action: str, repository: str, number: int, title: str, url: str):
         escaped_sender = f'`@{self.escape(sender)}`'

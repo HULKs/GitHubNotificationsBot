@@ -97,8 +97,9 @@ class Bot:
             '\n')[0] for commit in payload['commits']]
         branch = payload['ref'].split('/')[-1]
         repository = payload['repository']['full_name']
-        await self.telegram.send_push(pusher, commit_messages, branch, repository)
-        await self.matrix.send_push(pusher, commit_messages, branch, repository)
+        is_forced = payload['forced']
+        await self.telegram.send_push(pusher, commit_messages, branch, repository, is_forced)
+        await self.matrix.send_push(pusher, commit_messages, branch, repository, is_forced)
         return aiohttp.web.Response()
 
     async def handle_issue_or_pull_request(self, payload: dict):

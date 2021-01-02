@@ -69,7 +69,7 @@ class MatrixClient:
             f'\U000026a0 Creating webhook at <code>{self.escape(organization)}</code>...',
         )
 
-    async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str):
+    async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str, is_forced: bool):
         escaped_commit_messages_markdown = '\n'.join(
             [f'- `{self.escape(message)}`' for message in commit_messages[:10]],
         )
@@ -80,9 +80,10 @@ class MatrixClient:
             escaped_commit_messages_markdown += f'\n... {len(commit_messages) - 10} more'
             escaped_commit_messages_html += f'<br />... {len(commit_messages) - 10} more'
         commit_label = 'commits' if len(commit_messages) > 1 else 'commit'
+        force_label = 'force ' if is_forced else ''
         await self.send_to_pushes(
-            f'`@{pusher}` pushed {len(commit_messages)} {commit_label} to `{branch}` at `{repository}`:\n\n{escaped_commit_messages_markdown}',
-            f'<code>@{self.escape(pusher)}</code> pushed {len(commit_messages)} {commit_label} to <code>{self.escape(branch)}</code> at <code>{self.escape(repository)}</code>:<br /><br />{escaped_commit_messages_html}',
+            f'`@{pusher}` {force_label}pushed {len(commit_messages)} {commit_label} to `{branch}` at `{repository}`:\n\n{escaped_commit_messages_markdown}',
+            f'<code>@{self.escape(pusher)}</code> {force_label}pushed {len(commit_messages)} {commit_label} to <code>{self.escape(branch)}</code> at <code>{self.escape(repository)}</code>:<br /><br />{escaped_commit_messages_html}',
         )
 
     async def send_issue_or_pull_request(self, sender: str, type: str, action: str, repository: str, number: int, title: str, url: str):

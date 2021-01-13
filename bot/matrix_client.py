@@ -71,14 +71,16 @@ class MatrixClient:
 
     async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str, is_forced: bool):
         escaped_commit_messages_markdown = '\n'.join(
-            [f'- `{self.escape(message)}`' for message in commit_messages[:10]],
+            [f'- `{self.escape(message)}`' for message in commit_messages[-10:]],
         )
         escaped_commit_messages_html = '<br />'.join(
-            [f'- <code>{self.escape(message)}</code>' for message in commit_messages[:10]],
+            [f'- <code>{self.escape(message)}</code>' for message in commit_messages[-10:]],
         )
         if len(commit_messages) > 10:
-            escaped_commit_messages_markdown += f'\n... {len(commit_messages) - 10} more'
-            escaped_commit_messages_html += f'<br />... {len(commit_messages) - 10} more'
+            escaped_commit_messages_markdown = f'... {len(commit_messages) - 10} more\n' + \
+                escaped_commit_messages_markdown
+            escaped_commit_messages_html += f'... {len(commit_messages) - 10} more<br />' + \
+                escaped_commit_messages_html
         commit_label = 'commits' if len(commit_messages) > 1 else 'commit'
         force_label = 'force ' if is_forced else ''
         await self.send_to_pushes(

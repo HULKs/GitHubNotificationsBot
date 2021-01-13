@@ -47,7 +47,9 @@ class TelegramClient:
         escaped_branch = f'`{self.escape(branch)}`'
         escaped_repository = f'`{self.escape(repository)}`'
         force_label = 'force ' if is_forced else ''
-        await self.send_to_pushes(f'{escaped_pusher} {force_label}pushed {len(commit_messages)} {commit_label} to {escaped_branch} at {escaped_repository}:\n\n{escaped_commit_messages}')
+        url = f'https://github.com/{repository}/tree/{branch}'
+        converted_url = f'[{self.escape(url)}]({url})'
+        await self.send_to_pushes(f'{escaped_pusher} {force_label}pushed {len(commit_messages)} {commit_label} to {escaped_branch} at {escaped_repository}:\n\n{escaped_commit_messages}\n\n{converted_url}')
 
     async def send_issue_or_pull_request(self, sender: str, type: str, action: str, repository: str, number: int, title: str, url: str):
         escaped_sender = f'`@{self.escape(sender)}`'

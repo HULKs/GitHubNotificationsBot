@@ -17,10 +17,10 @@ class TelegramClient:
         await self.bot.close()
 
     async def send_to_discussions(self, message: str, **kwargs):
-        await self.bot.send_message(chat_id=self.chat_id_discussions, text=message, parse_mode='MarkdownV2', **kwargs)
+        await self.bot.send_message(chat_id=self.chat_id_discussions, text=message, parse_mode='MarkdownV2', disable_web_page_preview=True, **kwargs)
 
     async def send_to_pushes(self, message: str, **kwargs):
-        await self.bot.send_message(chat_id=self.chat_id_pushes, text=message, parse_mode='MarkdownV2', **kwargs)
+        await self.bot.send_message(chat_id=self.chat_id_pushes, text=message, parse_mode='MarkdownV2', disable_web_page_preview=True, **kwargs)
 
     async def send_startup(self):
         await self.send_to_discussions('\U0001f92b Online again', disable_notification=True)
@@ -64,7 +64,8 @@ class TelegramClient:
         escaped_commenter = f'`@{self.escape(commenter)}`'
         escaped_issue_or_pull_request = f'`{self.escape(repository)}#{number}`'
         escaped_title = f'`{self.escape(title)}`'
-        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(body.strip()) > 0 else ''
+        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(
+            body.strip()) > 0 else ''
         converted_url = f'[{self.escape(url)}]({url})'
         await self.send_to_discussions(f'{escaped_commenter} commented on {type} {escaped_title} \\({escaped_issue_or_pull_request}\\){escaped_body}\n\n{converted_url}')
 
@@ -72,7 +73,8 @@ class TelegramClient:
         escaped_sender = f'`@{self.escape(sender)}`'
         escaped_pull_request = f'`{self.escape(repository)}#{number}`'
         escaped_title = f'`{self.escape(title)}`'
-        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(body.strip()) > 0 else ''
+        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(
+            body.strip()) > 0 else ''
         converted_url = f'[{self.escape(url)}]({url})'
         await self.send_to_discussions(f'{escaped_sender} {state} pull request {escaped_title} \\({escaped_pull_request}\\){escaped_body}\n\n{converted_url}')
 

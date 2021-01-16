@@ -35,7 +35,7 @@ class TelegramClient:
     async def send_create_webhook_of_organization(self, organization: str):
         await self.send_to_pushes(f'\U00002705 Creating webhook at `{self.escape(organization)}`\\.\\.\\.', disable_notification=True)
 
-    async def send_push(self, pusher: str, commit_messages: typing.List[str], branch: str, repository: str, is_forced: bool):
+    async def send_push(self, pusher: str, commit_messages: typing.List[str], commits_url: str, branch: str, branch_url: str, repository: str, repository_url: str, is_forced: bool):
         escaped_pusher = f'`@{self.escape(pusher)}`'
         escaped_commit_messages = '\n'.join(
             [f'\\- `{self.escape(message)}`' for message in commit_messages[-10:]],
@@ -44,12 +44,11 @@ class TelegramClient:
             escaped_commit_messages = f'\\.\\.\\. {len(commit_messages) - 10} more\n' + \
                 escaped_commit_messages
         commit_label = 'commits' if len(commit_messages) > 1 else 'commit'
-        escaped_branch = f'`{self.escape(branch)}`'
-        escaped_repository = f'`{self.escape(repository)}`'
+        converted_commits_url = f'[{len(commit_messages)} {commit_label}]({commits_url})'
+        converted_branch_url = f'[{self.escape(branch)}]({branch_url})'
+        converted_repository_url = f'[{self.escape(repository)}]({repository_url})'
         force_label = 'force ' if is_forced else ''
-        url = f'https://github.com/{repository}/tree/{branch}'
-        converted_url = f'[{self.escape(url)}]({url})'
-        await self.send_to_pushes(f'{escaped_pusher} {force_label}pushed {len(commit_messages)} {commit_label} to {escaped_branch} at {escaped_repository}:\n\n{escaped_commit_messages}\n\n{converted_url}')
+        await self.send_to_pushes(f'{escaped_pusher} {force_label}pushed {converted_commits_url} to {converted_branch_url} at {converted_repository_url}:\n\n{escaped_commit_messages}')
 
     async def send_issue_or_pull_request(self, sender: str, type: str, action: str, repository: str, number: int, title: str, url: str):
         escaped_sender = f'`@{self.escape(sender)}`'

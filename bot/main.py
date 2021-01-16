@@ -95,11 +95,14 @@ class Bot:
         pusher = payload['pusher']['name']
         commit_messages = [commit['message'].split(
             '\n')[0] for commit in payload['commits']]
+        commits_url = payload['compare']
         branch = payload['ref'].split('/')[-1]
         repository = payload['repository']['full_name']
+        branch_url = f'https://github.com/{repository}/tree/{branch}'
+        repository_url = f'https://github.com/{repository}'
         is_forced = payload['forced']
-        await self.telegram.send_push(pusher, commit_messages, branch, repository, is_forced)
-        await self.matrix.send_push(pusher, commit_messages, branch, repository, is_forced)
+        await self.telegram.send_push(pusher, commit_messages, commits_url, branch, branch_url, repository, repository_url, is_forced)
+        await self.matrix.send_push(pusher, commit_messages, commits_url, branch, branch_url, repository, repository_url, is_forced)
         return aiohttp.web.Response()
 
     async def handle_issue_or_pull_request(self, payload: dict):
@@ -215,7 +218,8 @@ async def async_main(arguments):
 
         eternity_event = asyncio.Event()
         try:
-            logger.info(f'Listening on {", ".join(str(site.name) for site in runner.sites)}...')
+            logger.info(
+                f'Listening on {", ".join(str(site.name) for site in runner.sites)}...')
             await eternity_event.wait()
         finally:
             await runner.cleanup()

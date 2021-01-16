@@ -129,9 +129,10 @@ class Bot:
         number = payload['pull_request']['number'] if 'pull_request' in payload else payload['issue']['number']
         title = payload['pull_request']['title'] if 'pull_request' in payload else payload['issue']['title']
         body = payload['comment']['body']
-        url = payload['comment']['html_url']
-        await self.telegram.send_issue_or_pull_request_comment(commenter, type, repository, number, title, body, url)
-        await self.matrix.send_issue_or_pull_request_comment(commenter, type, repository, number, title, body, url)
+        comment_url = payload['comment']['html_url']
+        url = payload['pull_request']['html_url'] if 'pull_request' in payload else payload['issue']['html_url']
+        await self.telegram.send_issue_or_pull_request_comment(commenter, type, repository, number, title, body, comment_url, url)
+        await self.matrix.send_issue_or_pull_request_comment(commenter, type, repository, number, title, body, comment_url, url)
         return aiohttp.web.Response()
 
     async def handle_pull_request_review(self, payload: dict):
@@ -145,9 +146,10 @@ class Bot:
         number = payload['pull_request']['number']
         title = payload['pull_request']['title']
         body = payload['review']['body']
-        url = payload['review']['html_url']
-        await self.telegram.send_pull_request_review(sender, state, repository, number, title, body, url)
-        await self.matrix.send_pull_request_review(sender, state, repository, number, title, body, url)
+        comment_url = payload['review']['html_url']
+        url = payload['pull_request']['html_url'] if 'pull_request' in payload else payload['issue']['html_url']
+        await self.telegram.send_pull_request_review(sender, state, repository, number, title, body, comment_url, url)
+        await self.matrix.send_pull_request_review(sender, state, repository, number, title, body, comment_url, url)
         return aiohttp.web.Response()
 
     async def handle_fork(self, payload: dict):

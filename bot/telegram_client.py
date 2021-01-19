@@ -54,7 +54,7 @@ class TelegramClient:
         escaped_sender = f'`@{self.escape(sender)}`'
         escaped_action = self.escape(action)
         escaped_title = f'`{self.escape(title)}`'
-        converted_url = f'[{self.escape(repository)}#{number}]({url})'
+        converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
         await self.send_to_discussions(f'{escaped_sender} {escaped_action} {type} {escaped_title} \\({converted_url}\\)')
         # TODO: merge
 
@@ -63,7 +63,7 @@ class TelegramClient:
         escaped_title = f'`{self.escape(title)}`'
         escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(
             body.strip()) > 0 else ''
-        converted_url = f'[{self.escape(repository)}#{number}]({url})'
+        converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
         await self.send_to_discussions(f'{escaped_commenter} [commented on {type}]({comment_url}) {escaped_title} \\({converted_url}\\){escaped_body}')
 
     async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: str, comment_url: str, url: str):
@@ -71,7 +71,7 @@ class TelegramClient:
         escaped_title = f'`{self.escape(title)}`'
         escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(
             body.strip()) > 0 else ''
-        converted_url = f'[{self.escape(repository)}#{number}]({url})'
+        converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
         await self.send_to_discussions(f'{escaped_sender} [{state} pull request]({comment_url}) {escaped_title} \\({converted_url}\\){escaped_body}')
 
     def escape(self, message: str):

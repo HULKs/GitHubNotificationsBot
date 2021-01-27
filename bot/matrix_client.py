@@ -79,7 +79,7 @@ class MatrixClient:
         if len(commit_messages) > 10:
             escaped_commit_messages_markdown = f'... {len(commit_messages) - 10} more\n' + \
                 escaped_commit_messages_markdown
-            escaped_commit_messages_html += f'... {len(commit_messages) - 10} more<br />' + \
+            escaped_commit_messages_html = f'... {len(commit_messages) - 10} more<br />' + \
                 escaped_commit_messages_html
         commit_label = 'commits' if len(commit_messages) > 1 else 'commit'
         force_label = 'force ' if is_forced else ''

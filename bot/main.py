@@ -206,7 +206,7 @@ class Bot:
 
 async def async_main(arguments):
     logger = logging.getLogger('main')
-    app = aiohttp.web.Application()
+    app = aiohttp.web.Application(client_max_size=10*1024*1024)
 
     async with Bot(arguments, app):
         runner = aiohttp.web.AppRunner(app)

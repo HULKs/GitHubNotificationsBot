@@ -146,6 +146,8 @@ class Bot:
             state = 'requested changes on'
         elif payload['review']['state'] == 'commented':
             state = 'commented on'
+        elif payload['review']['state'] == 'dismissed':
+            state = 'dismissed a review on'
         sender = payload['sender']['login']
         repository = payload['repository']['full_name']
         number = payload['pull_request']['number']

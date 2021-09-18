@@ -97,19 +97,17 @@ class TelegramClient:
         await self.send_to_discussions(f'{escaped_sender} {escaped_action} {type} {escaped_title} \\({converted_url}\\)')
         # TODO: merge
 
-    async def send_issue_or_pull_request_comment(self, commenter: str, type: str, repository: str, number: int, title: str, body: str, comment_url: str, url: str):
+    async def send_issue_or_pull_request_comment(self, commenter: str, type: str, repository: str, number: int, title: str, body: typing.Optional[str], comment_url: str, url: str):
         escaped_commenter = f'`@{self.escape(commenter)}`'
         escaped_title = f'`{self.escape(title)}`'
-        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(
-            body.strip()) > 0 else ''
+        escaped_body = f':\n\n`{self.escape(body.strip())}`' if body is not None and len(body.strip()) > 0 else ''
         converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
         await self.send_to_discussions(f'{escaped_commenter} [commented on {type}]({comment_url}) {escaped_title} \\({converted_url}\\){escaped_body}')
 
-    async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: str, comment_url: str, url: str):
+    async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: typing.Optional[str], comment_url: str, url: str):
         escaped_sender = f'`@{self.escape(sender)}`'
         escaped_title = f'`{self.escape(title)}`'
-        escaped_body = f':\n\n`{self.escape(body.strip())}`' if len(
-            body.strip()) > 0 else ''
+        escaped_body = f':\n\n`{self.escape(body.strip())}`' if body is not None and len(body.strip()) > 0 else ''
         converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
         await self.send_to_discussions(f'{escaped_sender} [{state} pull request]({comment_url}) {escaped_title} \\({converted_url}\\){escaped_body}')
 

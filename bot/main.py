@@ -40,6 +40,7 @@ class Bot:
             homeserver=self.arguments['matrix_homeserver'],
             user=self.arguments['matrix_user_id'],
             device_id=self.arguments['matrix_device_id'],
+            store_path=self.arguments['matrix_store_path'],
         )
 
     async def __aenter__(self):
@@ -259,6 +260,7 @@ async def async_main(arguments):
 @click.option('--matrix-user-id', required=True, envvar='MATRIX_USER_ID')
 @click.option('--matrix-device-id', required=True, envvar='MATRIX_DEVICE_ID')
 @click.option('--matrix-access-token', required=True, envvar='MATRIX_ACCESS_TOKEN')
+@click.option('--matrix-store-path', required=True, envvar='MATRIX_STORE_PATH')
 @click.option('--matrix-room-id-discussions', required=True, envvar='MATRIX_ROOM_ID_DISCUSSIONS')
 @click.option('--matrix-room-id-pushes', required=True, envvar='MATRIX_ROOM_ID_PUSHES')
 @click.option('--logging-level', required=True, type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), envvar='LOGGING_LEVEL')

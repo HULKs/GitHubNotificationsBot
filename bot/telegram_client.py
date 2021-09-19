@@ -14,14 +14,13 @@ class TelegramClient:
         self.logger = logging.getLogger('TelegramClient')
         self.bot = aiogram.Bot(*args, **kwargs)
         self.message_queue = asyncio.Queue()
-        self.shutdown_event = asyncio.Event()
 
     async def __aenter__(self) -> 'TelegramClient':
         self.send_task = asyncio.create_task(self.send_runner())
         return self
 
     async def __aexit__(self, *args, **kwargs):
-        self.shutdown_event.set()
+        self.send_task.cancel()
         await self.send_task
         if not self.message_queue.empty():
             self.logger.error(f'{self.message_queue.qsize()} unsent messages:')
@@ -34,26 +33,26 @@ class TelegramClient:
         await self.bot.close()
 
     async def send_runner(self):
-        while True:
-            got_shutdown = self.shutdown_event.wait()
-            got_message = self.message_queue.get()
-            done, _ = await asyncio.wait((got_shutdown, got_message), return_when=asyncio.FIRST_COMPLETED)
-            if got_shutdown in done:
-                break
-            assert got_message in done
-            chat_id, message, message_kwargs = await got_message
-            back_off_timeout = 6
+        try:
             while True:
-                try:
-                    await self.bot.send_message(chat_id=chat_id, text=message, parse_mode='MarkdownV2', disable_web_page_preview=True, **message_kwargs)
-                except Exception:
-                    self.logger.error(f'Failed to send message \'{message}\' to chat {chat_id} with kwargs={message_kwargs}')
-                    traceback.print_exc()
-                    self.logger.error(f'Sleeping for {back_off_timeout} seconds...')
-                    await asyncio.sleep(back_off_timeout)
-                    if back_off_timeout <= 120:
-                        back_off_timeout *= 2
-                    self.logger.error(f'Retrying...')
+                chat_id, message, message_kwargs = await self.message_queue.get()
+                back_off_timeout = 6
+                while True:
+                    try:
+                        await self.bot.send_message(chat_id=chat_id, text=message, parse_mode='MarkdownV2', disable_web_page_preview=True, **message_kwargs)
+                        break
+                    except asyncio.CancelledError:
+                        return
+                    except Exception:
+                        self.logger.error(f'Failed to send message \'{message}\' to chat {chat_id} with kwargs={message_kwargs}')
+                        traceback.print_exc()
+                        self.logger.error(f'Sleeping for {back_off_timeout} seconds...')
+                        await asyncio.sleep(back_off_timeout)
+                        if back_off_timeout <= 120:
+                            back_off_timeout *= 2
+                        self.logger.error(f'Retrying...')
+        except asyncio.CancelledError:
+            pass
 
     async def send_to_discussions(self, message: str, **kwargs):
         await self.message_queue.put((self.chat_id_discussions, message, kwargs))

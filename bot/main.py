@@ -22,7 +22,6 @@ class Bot:
                 self.handle,
             ),
         ])
-        self.shutdown_event = asyncio.Event()
         self.update_hooks_event = asyncio.Event()
         self.github = GitHubApi(
             access_token=self.arguments['github_access_token'],
@@ -54,7 +53,7 @@ class Bot:
         return self
 
     async def __aexit__(self, *args, **kwargs):
-        self.shutdown_event.set()
+        self.update_hooks_task.cancel()
         await self.update_hooks_task
         await self.telegram.__aexit__(*args, **kwargs)
         await self.matrix.__aexit__(*args, **kwargs)
@@ -168,58 +167,56 @@ class Bot:
         self.update_hooks_event.set()
 
     async def update_hooks_runner(self):
-        while True:
-            got_shutdown = self.shutdown_event.wait()
-            got_update = self.update_hooks_event.wait()
-            done, _ = await asyncio.wait((got_shutdown, got_update), return_when=asyncio.FIRST_COMPLETED)
-            if got_shutdown in done:
-                break
-            assert got_update in done
-            self.update_hooks_event.clear()
-            required_events = [
-                'push',
-                'issues',
-                'pull_request',
-                'issue_comment',
-                'pull_request_review_comment',
-                'pull_request_review',
-                'fork',
-            ]
-            create_needed = True
-            for hook_id, hook_url, hook_events in await self.github.hooks(self.arguments['github_organization']):
-                if hook_url == self.arguments['github_webhook_url']:
-                    create_needed = False
-                    if set(hook_events) != set(required_events):
-                        await self.github.delete_hook(hook_id, self.arguments['github_organization'])
+        try:
+            while True:
+                await self.update_hooks_event.wait()
+                self.update_hooks_event.clear()
+                required_events = [
+                    'push',
+                    'issues',
+                    'pull_request',
+                    'issue_comment',
+                    'pull_request_review_comment',
+                    'pull_request_review',
+                    'fork',
+                ]
+                create_needed = True
+                for hook_id, hook_url, hook_events in await self.github.hooks(self.arguments['github_organization']):
+                    if hook_url == self.arguments['github_webhook_url']:
+                        create_needed = False
+                        if set(hook_events) != set(required_events):
+                            await self.github.delete_hook(hook_id, self.arguments['github_organization'])
+                            create_needed = True
+                if create_needed:
+                    await self.telegram.send_create_webhook_of_organization(self.arguments['github_organization'])
+                    await self.matrix.send_create_webhook_of_organization(self.arguments['github_organization'])
+                    await self.github.create_hook(
+                        self.arguments['github_webhook_url'],
+                        required_events,
+                        self.arguments['github_webhook_secret'],
+                        self.arguments['github_organization'],
+                    )
+                for repo in self.arguments['github_forkable_repositories'].split(','):
+                    for fork_owner, fork_repo in await self.github.forks(self.arguments['github_organization'], repo):
                         create_needed = True
-            if create_needed:
-                await self.telegram.send_create_webhook_of_organization(self.arguments['github_organization'])
-                await self.matrix.send_create_webhook_of_organization(self.arguments['github_organization'])
-                await self.github.create_hook(
-                    self.arguments['github_webhook_url'],
-                    required_events,
-                    self.arguments['github_webhook_secret'],
-                    self.arguments['github_organization'],
-                )
-            for repo in self.arguments['github_forkable_repositories'].split(','):
-                for fork_owner, fork_repo in await self.github.forks(self.arguments['github_organization'], repo):
-                    create_needed = True
-                    for hook_id, hook_url, hook_events in await self.github.hooks(fork_owner, fork_repo):
-                        if hook_url == self.arguments['github_webhook_url']:
-                            create_needed = False
-                            if set(hook_events) != set(required_events):
-                                await self.github.delete_hook(hook_id, fork_owner, fork_repo)
-                                create_needed = True
-                    if create_needed:
-                        await self.telegram.send_create_webhook_of_repository(fork_owner, fork_repo)
-                        await self.matrix.send_create_webhook_of_repository(fork_owner, fork_repo)
-                        await self.github.create_hook(
-                            self.arguments['github_webhook_url'],
-                            required_events,
-                            self.arguments['github_webhook_secret'],
-                            fork_owner,
-                            fork_repo,
-                        )
+                        for hook_id, hook_url, hook_events in await self.github.hooks(fork_owner, fork_repo):
+                            if hook_url == self.arguments['github_webhook_url']:
+                                create_needed = False
+                                if set(hook_events) != set(required_events):
+                                    await self.github.delete_hook(hook_id, fork_owner, fork_repo)
+                                    create_needed = True
+                        if create_needed:
+                            await self.telegram.send_create_webhook_of_repository(fork_owner, fork_repo)
+                            await self.matrix.send_create_webhook_of_repository(fork_owner, fork_repo)
+                            await self.github.create_hook(
+                                self.arguments['github_webhook_url'],
+                                required_events,
+                                self.arguments['github_webhook_secret'],
+                                fork_owner,
+                                fork_repo,
+                            )
+        except asyncio.CancelledError:
+            pass
 
 
 async def async_main(arguments):

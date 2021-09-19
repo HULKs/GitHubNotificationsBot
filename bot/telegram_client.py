@@ -36,7 +36,7 @@ class TelegramClient:
     async def send_runner(self):
         while True:
             got_shutdown = self.shutdown_event.wait()
-            got_message = self.discussion_message_queue.get()
+            got_message = self.message_queue.get()
             done, _ = await asyncio.wait((got_shutdown, got_message), return_when=asyncio.FIRST_COMPLETED)
             if got_shutdown in done:
                 break

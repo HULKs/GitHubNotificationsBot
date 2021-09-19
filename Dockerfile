@@ -13,4 +13,5 @@ WORKDIR /usr/src/app
 COPY setup.py ./
 COPY bot/ ./bot/
 RUN pip install --no-cache-dir ./
+EXPOSE 80
 CMD ["bot"]

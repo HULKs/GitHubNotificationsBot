@@ -6,8 +6,7 @@ class MatrixClient:
 
     def __init__(self, user_id: str, access_token: str, room_id_discussions: str, room_id_pushes: str, *args, **kwargs):
         self.client = nio.AsyncClient(*args, **kwargs)
-        self.client.user_id = user_id
-        self.client.access_token = access_token
+        self.client.restore_login(user_id, self.client.device_id, access_token)
         self.room_id_discussions = room_id_discussions
         self.room_id_pushes = room_id_pushes
 

@@ -47,7 +47,7 @@ class Bot:
         await self.github.__aenter__()
         await self.telegram.__aenter__()
         await self.matrix.__aenter__()
-        self.update_hooks_task = asyncio.create_task(self.update_hook_runner())
+        self.update_hooks_task = asyncio.create_task(self.update_hooks_runner())
         await self.telegram.send_startup()
         await self.matrix.send_startup()
         await self.update_hooks()

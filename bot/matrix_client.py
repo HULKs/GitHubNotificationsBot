@@ -1,3 +1,4 @@
+import logging
 import nio
 import typing
 
@@ -7,10 +8,22 @@ class MatrixClient:
     def __init__(self, user_id: str, access_token: str, room_id_discussions: str, room_id_pushes: str, *args, **kwargs):
         self.client = nio.AsyncClient(*args, **kwargs)
         self.client.restore_login(user_id, self.client.device_id, access_token)
+        self.logger = logging.getLogger('MatrixClient')
         self.room_id_discussions = room_id_discussions
         self.room_id_pushes = room_id_pushes
 
     async def __aenter__(self) -> 'MatrixClient':
+        if self.client.should_upload_keys:
+            self.logger.debug('Should upload keys...')
+            await self.client.keys_upload()
+        if self.client.should_query_keys:
+            self.logger.debug('Should query keys...')
+            await self.client.keys_query()
+        if self.client.should_claim_keys:
+            self.logger.debug('Should claim keys...')
+            await self.client.keys_claim()
+        self.logger.debug('Syncing full state...')
+        await self.client.sync(full_state=True)
         return self
 
     async def __aexit__(self, *args, **kwargs):
@@ -26,6 +39,7 @@ class MatrixClient:
                 'format': 'org.matrix.custom.html',
                 'formatted_body': formatted_message,
             },
+            ignore_unverified_devices=True,
         )
 
     async def send_to_pushes(self, message: str, formatted_message: str, **kwargs):
@@ -38,6 +52,7 @@ class MatrixClient:
                 'format': 'org.matrix.custom.html',
                 'formatted_body': formatted_message,
             },
+            ignore_unverified_devices=True,
         )
 
     async def send_startup(self):

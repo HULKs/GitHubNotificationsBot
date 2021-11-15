@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import nio
 import typing
@@ -13,20 +14,22 @@ class MatrixClient:
         self.room_id_pushes = room_id_pushes
 
     async def __aenter__(self) -> 'MatrixClient':
-        if self.client.should_upload_keys:
-            self.logger.debug('Should upload keys...')
-            await self.client.keys_upload()
-        if self.client.should_query_keys:
-            self.logger.debug('Should query keys...')
-            await self.client.keys_query()
-        if self.client.should_claim_keys:
-            self.logger.debug('Should claim keys...')
-            await self.client.keys_claim()
-        self.logger.debug('Syncing full state...')
-        await self.client.sync(full_state=True)
+        self.logger.debug('Starting sync task...')
+        wait_for_first_sync = asyncio.create_task(self.client.synced.wait())
+        self.sync_task = asyncio.create_task(self.client.sync_forever(30000, full_state=True))
+        self.logger.debug('Waiting for first sync...')
+        await wait_for_first_sync
+        self.logger.debug('First sync finished')
+
         return self
 
     async def __aexit__(self, *args, **kwargs):
+        self.sync_task.cancel()
+        try:
+            await self.sync_task
+        except asyncio.CancelledError:
+            pass
+
         await self.client.close()
 
     async def send_to_discussions(self, message: str, formatted_message: str, **kwargs):

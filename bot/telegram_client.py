@@ -21,7 +21,11 @@ class TelegramClient:
 
     async def __aexit__(self, *args, **kwargs):
         self.send_task.cancel()
-        await self.send_task
+        try:
+            await self.send_task
+        except asyncio.CancelledError:
+            pass
+
         if not self.message_queue.empty():
             self.logger.error(f'{self.message_queue.qsize()} unsent messages:')
         while True:
@@ -30,6 +34,7 @@ class TelegramClient:
                 self.logger.error(f'Message \'{message}\' to chat {chat_id} with kwargs={message_kwargs}')
             except asyncio.QueueEmpty:
                 break
+
         await self.bot.close()
 
     async def send_runner(self):

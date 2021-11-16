@@ -120,7 +120,7 @@ class MatrixClient:
 
     async def send_pull_request_review(self, sender: str, state: str, repository: str, number: int, title: str, body: typing.Optional[str], comment_url: str, url: str):
         escaped_body_markdown = f':\n\n`{body.strip()}`' if body is not None and len(body.strip()) > 0 else ''
-        escaped_body_html = self.escape(body.strip()).replace("\n", "<br />")
+        escaped_body_html = self.escape(body.strip()).replace("\n", "<br />") if body is not None and len(body.strip()) > 0 else ''
         escaped_body_html = f':<br /><br /><code>{escaped_body_html}</code>' if body is not None and len(body.strip()) > 0 else ''
         await self.send_to_discussions(
             f'`@{sender}` [{state} pull request]({comment_url}) `{title}` ([{repository}#{number}]({url})){escaped_body_markdown}',

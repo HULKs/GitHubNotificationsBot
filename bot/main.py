@@ -141,10 +141,14 @@ class Bot:
         return aiohttp.web.Response()
 
     async def handle_pull_request_review(self, payload: dict):
+        body = payload['review']['body']
         state = payload['review']['state']
         if payload['review']['state'] == 'changes_requested':
             state = 'requested changes on'
         elif payload['review']['state'] == 'commented':
+            if body == None:
+                # ignore messages that indicate comment without a comment
+                return aiohttp.web.Response()
             state = 'commented on'
         elif payload['review']['state'] == 'dismissed':
             state = 'dismissed a review on'
@@ -152,7 +156,6 @@ class Bot:
         repository = payload['repository']['full_name']
         number = payload['pull_request']['number']
         title = payload['pull_request']['title']
-        body = payload['review']['body']
         comment_url = payload['review']['html_url']
         url = payload['pull_request']['html_url'] if 'pull_request' in payload else payload['issue']['html_url']
         await self.telegram.send_pull_request_review(sender, state, repository, number, title, body, comment_url, url)

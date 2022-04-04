@@ -115,5 +115,12 @@ class TelegramClient:
         converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
         await self.send_to_discussions(f'{escaped_sender} [{state} pull request]({comment_url}) {escaped_title} \\({converted_url}\\){escaped_body}')
 
+    async def send_pull_request_draft(self, sender: str, is_now_draft: bool, repository: str, number: int, title: str, url: str):
+        escaped_sender = f'`@{self.escape(sender)}`'
+        action = 'draft' if is_now_draft else 'ready for review'
+        escaped_title = f'`{self.escape(title)}`'
+        converted_url = f'[{self.escape(repository)}\\#{number}]({url})'
+        await self.send_to_discussions(f'{escaped_sender} marked pull request {escaped_title} \\({converted_url}\\) as {action}')
+
     def escape(self, message: str):
         return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', message)

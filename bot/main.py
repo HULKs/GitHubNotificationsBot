@@ -87,6 +87,10 @@ class Bot:
             return await self.handle_pull_request_review(payload)
         elif event == 'fork':
             return await self.handle_fork(payload)
+        elif event == 'converted_to_draft':
+            return await self.handle_converted_to_draft(payload)
+        elif event == 'ready_for_review':
+            return await self.handle_ready_for_review(payload)
         # silently ignore unimplemented events
         raise aiohttp.web.HTTPOk
 
@@ -164,6 +168,26 @@ class Bot:
 
     async def handle_fork(self, payload: dict):
         await self.update_hooks()
+        return aiohttp.web.Response()
+
+    async def handle_converted_to_draft(self, payload: dict):
+        sender = payload['sender']['login']
+        repository = payload['repository']['full_name']
+        number = payload['pull_request']['number']
+        title = payload['pull_request']['title']
+        url = payload['pull_request']['html_url']
+        await self.telegram.send_pull_request_draft(sender, True, repository, number, title, url)
+        await self.matrix.send_pull_request_draft(sender, True, repository, number, title, url)
+        return aiohttp.web.Response()
+
+    async def handle_pull_request_review(self, payload: dict):
+        sender = payload['sender']['login']
+        repository = payload['repository']['full_name']
+        number = payload['pull_request']['number']
+        title = payload['pull_request']['title']
+        url = payload['pull_request']['html_url']
+        await self.telegram.send_pull_request_draft(sender, False, repository, number, title, url)
+        await self.matrix.send_pull_request_draft(sender, False, repository, number, title, url)
         return aiohttp.web.Response()
 
     async def update_hooks(self):

@@ -130,5 +130,12 @@ class MatrixClient:
             f'<code>@{self.escape(sender)}</code> <a href="{comment_url}">{state} pull request</a> <code>{self.escape(title)}</code> (<a href="{url}">{self.escape(repository)}#{number}</a>){escaped_body_html}',
         )
 
+    async def send_pull_request_draft(self, sender: str, is_now_draft: bool, repository: str, number: int, title: str, url: str):
+        action = 'draft' if is_now_draft else 'ready for review'
+        await self.send_to_discussions(
+            f'`@{sender}` marked pull request `{title}` ([{repository}#{number}]({url})) as {action}',
+            f'<code>@{self.escape(sender)}</code> marked pull request <code>{self.escape(title)}</code> (<a href="{url}">{self.escape(repository)}#{number}</a>) as {action}',
+        )
+
     def escape(self, message: str):
         return message.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace('\'', '&#x27;')
